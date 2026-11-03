@@ -157,102 +157,9 @@ function Get-InstallationPrerequisites
 
 function Show-InstallationPrerequisiteDialog
 {
-    Add-Type -AssemblyName System.Windows.Forms
-    Add-Type -AssemblyName System.Drawing
-    [System.Windows.Forms.Application]::EnableVisualStyles()
-    $form = New-Object System.Windows.Forms.Form
-    $form.Text = 'DSH Desktop - 安装准备'
-    $form.ClientSize = New-Object System.Drawing.Size(720, 470)
-    $form.StartPosition = 'CenterScreen'
-    $form.FormBorderStyle = 'FixedDialog'
-    $form.MaximizeBox = $false
-    $form.MinimizeBox = $false
-    $form.AutoScaleMode = 'Dpi'
-    $font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9)
-    $form.Font = $font
-    $heading = New-Object System.Windows.Forms.Label
-    $heading.Text = '先补齐运行组件，再继续安装 DSH Desktop'
-    $heading.SetBounds(22, 20, 676, 30)
-    $form.Controls.Add($heading)
-    $hint = New-Object System.Windows.Forms.Label
-    $hint.Text = '点击“官方下载”，按网页提示安装；完成后回到此窗口点“重新检测”。'
-    $hint.SetBounds(22, 54, 676, 28)
-    $form.Controls.Add($hint)
-    $componentRows = @()
-    for ($index = 0; $index -lt 4; $index++)
-    {
-        $status = New-Object System.Windows.Forms.Label
-        $status.SetBounds(22, (95 + 65 * $index), 530, 24)
-        $description = New-Object System.Windows.Forms.Label
-        $description.SetBounds(22, (120 + 65 * $index), 530, 30)
-        $download = New-Object System.Windows.Forms.Button
-        $download.Text = '官方下载'
-        $download.SetBounds(585, (100 + 65 * $index), 110, 32)
-        $download.Add_Click({
-            param($sender, $eventArgs)
-            try
-            {
-                Start-Process -FilePath ([string]$sender.Tag) | Out-Null
-            }
-            catch
-            {
-                $null = [System.Windows.Forms.MessageBox]::Show(('无法打开浏览器，请手动访问：' + $sender.Tag), 'DSH Desktop')
-            }
-        })
-        $form.Controls.AddRange(@($status, $description, $download))
-        $componentRows += [pscustomobject]@{ Status = $status; Description = $description; Download = $download }
-    }
-    $restartHint = New-Object System.Windows.Forms.Label
-    $restartHint.Text = '如果组件安装器提示重启，请先重启 Windows，再次双击 Install.cmd。'
-    $restartHint.SetBounds(22, 365, 676, 30)
-    $form.Controls.Add($restartHint)
-    $refresh = New-Object System.Windows.Forms.Button
-    $refresh.Text = '重新检测'
-    $refresh.SetBounds(335, 420, 110, 32)
-    $continue = New-Object System.Windows.Forms.Button
-    $continue.Text = '继续安装'
-    $continue.SetBounds(460, 420, 110, 32)
-    $continue.DialogResult = 'OK'
-    $cancel = New-Object System.Windows.Forms.Button
-    $cancel.Text = '取消'
-    $cancel.SetBounds(585, 420, 110, 32)
-    $cancel.DialogResult = 'Cancel'
-    $form.Controls.AddRange(@($refresh, $continue, $cancel))
-    $form.CancelButton = $cancel
-    $refreshComponents = {
-        Update-InstallationSearchPath
-        $components = @(Get-InstallationPrerequisites)
-        for ($index = 0; $index -lt $components.Count; $index++)
-        {
-            $component = $components[$index]
-            $row = $componentRows[$index]
-            $statusText = '需要安装'
-            $row.Status.ForeColor = [System.Drawing.Color]::Firebrick
-            if ($component.IsInstalled)
-            {
-                $statusText = '已就绪'
-                $row.Status.ForeColor = [System.Drawing.Color]::DarkGreen
-            }
-            $row.Status.Text = $statusText + '  ' + $component.Name
-            $row.Description.Text = $component.Description
-            $row.Download.Tag = $component.DownloadUrl
-            $row.Download.Enabled = -not $component.IsInstalled
-        }
-        $continue.Enabled = @($components | Where-Object { -not $_.IsInstalled }).Count -eq 0
-    }
-    $refresh.Add_Click($refreshComponents)
-    try
-    {
-        & $refreshComponents
-        return $form.ShowDialog()
-    }
-    finally
-    {
-        $form.Dispose()
-        $font.Dispose()
-    }
+    . (Join-Path $PSScriptRoot 'InstallerDialog.ps1')
+    return Show-InstallerPreparationDialog
 }
-
 function Confirm-InstallationPrerequisites
 {
     param([switch]$NonInteractive)
@@ -271,7 +178,7 @@ function Confirm-InstallationPrerequisites
     $result = Show-InstallationPrerequisiteDialog
     if ($result -ne [System.Windows.Forms.DialogResult]::OK)
     {
-        throw [System.OperationCanceledException]::new('已取消安装，尚未更改 DSH Desktop。')
+        throw [System.OperationCanceledException]::new('安装已结束，可随时重新打开继续。')
     }
 
     # 界面允许继续后，再检查一次实际组件状态，防止误放行或环境发生变化。

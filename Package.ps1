@@ -14,6 +14,7 @@ New-Item -ItemType Directory -Path (Join-Path $packageRoot 'Desktop\runtimes\win
 # 固定发布清单，防止把配置、会话、日志、构建缓存或调试符号带入安装包。
 $rootFiles = @(
     'Install.cmd', 'Install.ps1', 'Prerequisites.ps1',
+    'InstallerDialog.ps1', 'Install-Dependency.ps1',
     'Start-DS-Harness-Background.ps1', 'Stop-DS-Harness.ps1',
     'Start-DS-Harness.mjs', 'Browser-Handoff.ps1', 'app.ico',
     'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'

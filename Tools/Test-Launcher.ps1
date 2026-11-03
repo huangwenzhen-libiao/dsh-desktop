@@ -111,7 +111,7 @@ try
     {
         throw '独立安装目录缺少程序或后台配置。'
     }
-    foreach ($file in @('Install.cmd', 'Prerequisites.ps1'))
+    foreach ($file in @('Install.cmd', 'Prerequisites.ps1', 'InstallerDialog.ps1', 'Install-Dependency.ps1'))
     {
         if (-not (Test-Path -LiteralPath (Join-Path $installRoot $file)))
         {

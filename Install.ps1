@@ -70,6 +70,7 @@ if (-not $sourceRoot.Equals($installRoot, [StringComparison]::OrdinalIgnoreCase)
         'Start-DS-Harness-Background.ps1', 'Stop-DS-Harness.ps1',
         'Start-DS-Harness.mjs', 'Browser-Handoff.ps1',
         'Install.cmd', 'Install.ps1', 'Prerequisites.ps1',
+        'InstallerDialog.ps1', 'Install-Dependency.ps1',
         'app.ico', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'
     )
     foreach ($programFile in $programFiles)
