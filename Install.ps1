@@ -1,7 +1,8 @@
-param(
+﻿param(
     [string]$InstallDirectory = (Join-Path $env:LOCALAPPDATA 'DSH Desktop'),
     [string]$RuntimePath,
-    [switch]$SkipShortcuts
+    [switch]$SkipShortcuts,
+    [switch]$NonInteractive
 )
 
 $ErrorActionPreference = 'Stop'
@@ -19,13 +20,15 @@ if (-not (Test-Path -LiteralPath $sourceExecutable -PathType Leaf))
     throw '未找到 Desktop\DSHarness.exe。源码用户请先运行 .\Build.ps1；普通用户请下载 Windows 发布包。'
 }
 
-# Node 和 PowerShell 由用户自行安装，避免安装器修改系统环境或请求管理员权限。
-$nodePath = (Get-Command node.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
-$null = Get-Command pwsh.exe -CommandType Application -ErrorAction Stop
-$nodeVersionText = & $nodePath --version
-if ($LASTEXITCODE -ne 0 -or [version]$nodeVersionText.TrimStart('v') -lt [version]'22.22.1')
+. (Join-Path $sourceRoot 'Prerequisites.ps1')
+try
 {
-    throw '请先安装 Node.js 22.22.1 或更高版本。'
+    Confirm-InstallationPrerequisites -NonInteractive:$NonInteractive
+}
+catch [System.OperationCanceledException]
+{
+    Write-Host $_.Exception.Message
+    exit 2
 }
 $installedExecutable = Join-Path $installRoot 'Desktop\DSHarness.exe'
 $runningDesktop = Get-Process -Name DSHarness -ErrorAction SilentlyContinue |
@@ -66,7 +69,8 @@ if (-not $sourceRoot.Equals($installRoot, [StringComparison]::OrdinalIgnoreCase)
     $programFiles = @(
         'Start-DS-Harness-Background.ps1', 'Stop-DS-Harness.ps1',
         'Start-DS-Harness.mjs', 'Browser-Handoff.ps1',
-        'Install.ps1', 'app.ico', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'
+        'Install.cmd', 'Install.ps1', 'Prerequisites.ps1',
+        'app.ico', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'
     )
     foreach ($programFile in $programFiles)
     {

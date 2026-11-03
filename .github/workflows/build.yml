@@ -21,9 +21,12 @@ jobs:
       - name: Build
         shell: pwsh
         run: ./Build.ps1
-      - name: Test backend contracts
+      - name: Test installer and backend contracts
         shell: pwsh
         run: ./Test.ps1
+      - name: Test Windows PowerShell installer compatibility
+        shell: powershell
+        run: ./Tools/Test-Prerequisites.ps1
       - name: Package
         shell: pwsh
         run: ./Package.ps1 -SkipBuild

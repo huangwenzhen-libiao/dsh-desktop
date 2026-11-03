@@ -1,4 +1,5 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
+& (Join-Path $PSScriptRoot 'Tools\Test-Prerequisites.ps1')
 $testProject = Join-Path $PSScriptRoot 'DesktopApp\Tests\BackendTests.csproj'
 & dotnet build $testProject -c Release --nologo
 if ($LASTEXITCODE -ne 0)

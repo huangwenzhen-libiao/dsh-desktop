@@ -1,4 +1,4 @@
-# 使用独立模拟服务验证可移植路径、单实例、端口保护和实际停止脚本。
+﻿# 使用独立模拟服务验证可移植路径、单实例、端口保护和实际停止脚本。
 $ErrorActionPreference = 'Stop'
 $sourceRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $testRoot = Join-Path $sourceRoot ('artifacts\launcher-test-' + [Guid]::NewGuid().ToString('N'))
@@ -96,17 +96,33 @@ try
     Write-Output 'PASS: 实际停止脚本只停止当前测试后台。'
 
     # 安装到隔离目录并复用模拟 npm 安装；跳过快捷方式，不触碰当前用户的实际应用。
+    # 此测试关注程序复制，组件检测和阻断场景由 Test-Prerequisites.ps1 单独覆盖。
+    function Confirm-TestInstallationPrerequisites
+    {
+        param([switch]$NonInteractive)
+        $global:DshInstallerTestPrerequisitesChecked = $true
+    }
+    $global:DshInstallerTestPrerequisitesChecked = $false
+    Set-Alias -Name Confirm-InstallationPrerequisites -Value Confirm-TestInstallationPrerequisites
     $installRoot = Join-Path $testRoot 'installed application'
-    & (Join-Path $sourceRoot 'Install.ps1') -InstallDirectory $installRoot -RuntimePath $runtimeRoot -SkipShortcuts
+    & (Join-Path $sourceRoot 'Install.ps1') -InstallDirectory $installRoot -RuntimePath $runtimeRoot -SkipShortcuts -NonInteractive
     $configuration = Get-Content -LiteralPath (Join-Path $installRoot 'launcher.config.json') -Raw | ConvertFrom-Json
-    if ($configuration.runtimePath -ne $runtimeRoot -or -not (Test-Path -LiteralPath (Join-Path $installRoot 'Desktop\DSHarness.exe')))
+    if (-not $global:DshInstallerTestPrerequisitesChecked -or $configuration.runtimePath -ne $runtimeRoot -or -not (Test-Path -LiteralPath (Join-Path $installRoot 'Desktop\DSHarness.exe')))
     {
         throw '独立安装目录缺少程序或后台配置。'
+    }
+    foreach ($file in @('Install.cmd', 'Prerequisites.ps1'))
+    {
+        if (-not (Test-Path -LiteralPath (Join-Path $installRoot $file)))
+        {
+            throw ('独立安装目录缺少安装引导文件：' + $file)
+        }
     }
     Write-Output 'PASS: 隔离安装完成，后台配置指向用户指定目录。'
 }
 finally
 {
+    Remove-Variable -Name DshInstallerTestPrerequisitesChecked -Scope Global -ErrorAction SilentlyContinue
     if (Test-Path -LiteralPath $statePath)
     {
         & pwsh.exe -NoProfile -File $stopScript -Port $port
